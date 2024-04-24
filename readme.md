@@ -23,57 +23,76 @@ sudo mysql_secure_installation
 
 ```bash
 sudo apt update
-sudo apt install wordpress
+continuer a installer wordpress
 ```
 
 3. le script de sauvegarde et de chiffrement :
 
+
 ```python
-```python
-import os
 import shutil
 import subprocess
-import ftplibimport os
+import ftplib
+import os
 import datetime
 import paramiko
 
 source_dir = '/var/www/'
-backup_dir = '/path/to/backup/'
+backup_dir = '/home/yug/'
 backup_name = 'wordpress_backup_' + datetime.datetime.now().strftime('%Y-%m-%d') + '.tar.gz'
 
+print("Connecting to MySQL server")
+
 # Backup MySQL database
-mysql_user = 'your_mysql_username'
-mysql_password = 'your_mysql_password'
-mysql_database = 'your_mysql_database_name'
+mysql_user = 'yug'
+mysql_password = 'doranco2024'
+mysql_database = 'wordpress'
+
 mysql_backup_file = os.path.join(backup_dir, 'mysql_backup.sql')
 
-mysql_dump_command = f"mysqldump -u {mysql_user} -p{mysql_password} {mysql_database} > {mysql_backup_file}"
-subprocess.call(mysql_dump_command, shell=True)
+try:
+    mysql_dump_command = f"mysqldump -u {mysql_user} -p{mysql_password} {mysql_database} > {mysql_backup_file}"
+    subprocess.call(mysql_dump_command, shell=True)
+    print("MySQL backup completed successfully")
+except Exception as e:
+    print("Error occurred while backing up MySQL:", e)
 
 # Encrypt backup file with OpenSSL
-encryption_key = 'your_encryption_key'
+encryption_key = 'aes_key.txt'
 encrypted_backup_file = os.path.join(backup_dir, 'encrypted_backup.tar.gz')
 
-openssl_encrypt_command = f"openssl enc -aes-256-cbc -salt -in {mysql_backup_file} -out {encrypted_backup_file} -k {encryption_key}"
-subprocess.call(openssl_encrypt_command, shell=True)
+try:
+    openssl_encrypt_command = f"openssl enc -aes-256-cbc -salt -in {mysql_backup_file} -out {encrypted_backup_file} -k {encryption_key}"
+    subprocess.call(openssl_encrypt_command, shell=True)
+    print("Encryption completed successfully")
+except Exception as e:
+    print("Error occurred while encrypting backup file:", e)
 
 # SFTP Connection details
-sftp_host = 'sftp.example.com'
+sftp_host = '192.168.1.13'
 sftp_port = 22
-sftp_username = 'your_sftp_username'
-sftp_password = 'your_sftp_password'
+sftp_username = 'yug'
+sftp_password = 'doranco'
 
 # Connect to SFTP server
-transport = paramiko.Transport((sftp_host, sftp_port))
-transport.connect(username=sftp_username, password=sftp_password)
-sftp = paramiko.SFTPClient.from_transport(transport)
+try:
+    transport = paramiko.Transport((sftp_host, sftp_port))
+    transport.connect(username=sftp_username, password=sftp_password)
+    sftp = paramiko.SFTPClient.from_transport(transport)
+    print("Connected to SFTP server")
+    
+    # Upload encrypted backup file
+    sftp.put(encrypted_backup_file, os.path.basename(encrypted_backup_file))
+    print("Backup uploaded successfully")
+    
+    # Close connection
+    sftp.close()
+    transport.close()
+except paramiko.AuthenticationException:
+    print("Authentication failed. Please check your SFTP credentials.")
+except Exception as e:
+    print("Error occurred during SFTP transfer:", e)
 
-# Upload encrypted backup file
-sftp.put(encrypted_backup_file, os.path.basename(encrypted_backup_file))
-
-# Close connection
-sftp.close()
-transport.close()
 
 
 ```
