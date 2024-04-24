@@ -28,6 +28,13 @@ continuer a installer wordpress
 
 3. le script de sauvegarde et de chiffrement :
 
+**Installatin des dependances*
+```bash
+sudo apt install python3-pip
+python3 -m pip install paramiko 
+
+```
+
 
 ```python
 import shutil
