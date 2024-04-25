@@ -148,5 +148,113 @@ sudo openssl enc -d -aes-256-cbc -in encrypted_backup.tar.gz -out decrypted -pas
 tar -xzf decrypted
 ```
 
+**Version améliorée du script de sauvegarde :**
+```python
+import shutil
+import subprocess
+import os
+import datetime
+import paramiko
+import random
+import string
+
+# Répertoire source contenant les données à sauvegarder
+source_dir = '/var/www/'
+
+# Répertoire de sauvegarde où seront stockées les sauvegardes
+backup_dir = '/home/yug/'
+
+# Nom de base de l'archive de sauvegarde
+backup_base_name = 'wordpress_backup_' + datetime.datetime.now().strftime('%Y-%m-%d')
+
+# Fonction pour générer une clé de chiffrement aléatoire
+def generate_encryption_key():
+    return ''.join(random.choices(string.ascii_letters + string.digits, k=16))
+
+# Génération de la clé de chiffrement
+encryption_key = generate_encryption_key()
+
+# Chemin vers le fichier contenant la clé de chiffrement
+encryption_key_file = os.path.join(backup_dir, 'encryption_key.txt')
+
+# Écriture de la clé de chiffrement dans un fichier
+with open(encryption_key_file, 'w') as key_file:
+    key_file.write(encryption_key)
+
+print("Encryption key generated successfully")
+
+# Sauvegarde de la base de données MySQL dans un fichier SQL
+mysql_user = 'yug'
+mysql_password = 'doranco2024'
+mysql_database = 'wordpress'
+
+mysql_backup_file = os.path.join(backup_dir, 'mysql_backup.sql')
+
+try:
+    mysql_dump_command = f"mysqldump -u {mysql_user} -p{mysql_password} {mysql_database} > {mysql_backup_file}"
+    subprocess.call(mysql_dump_command, shell=True)
+    print("MySQL backup completed successfully")
+except Exception as e:
+    print("Error occurred while backing up MySQL:", e)
+
+# Copie du contenu du répertoire FTP dans le répertoire de sauvegarde
+try:
+    shutil.copytree(source_dir, os.path.join(backup_dir, 'www'))
+    print("Website directory copied successfully")
+except Exception as e:
+    print("Error occurred while copying website directory:", e)
+
+# Création de l'archive contenant la sauvegarde MySQL et le contenu FTP
+backup_name = f"{backup_base_name}_{datetime.datetime.now().strftime('%H-%M-%S')}.tar.gz"
+
+try:
+    shutil.make_archive(os.path.join(backup_dir, backup_name.split('.')[0]), 'gztar', backup_dir)
+    print("Archive created successfully")
+except Exception as e:
+    print("Error occurred while creating archive:", e)
+
+# Chiffrement de l'archive avec OpenSSL
+encrypted_backup_file = os.path.join(backup_dir, f"encrypted_{backup_name}")
+
+try:
+    openssl_encrypt_command = f"openssl enc -aes-256-cbc -salt -in {backup_name} -out {encrypted_backup_file} -pass file:{encryption_key_file}"
+    subprocess.call(openssl_encrypt_command, shell=True)
+    print("Encryption completed successfully")
+except Exception as e:
+    print("Error occurred while encrypting backup file:", e)
+
+# Détails de connexion SFTP pour le serveur distant
+sftp_host = '192.168.1.13'
+sftp_port = 22
+sftp_username = 'yug'
+sftp_password = 'doranco'
+
+# Connexion au serveur SFTP et envoi de l'archive chiffrée et de la clé de chiffrement
+try:
+    transport = paramiko.Transport((sftp_host, sftp_port))
+    transport.connect(username=sftp_username, password=sftp_password)
+    sftp = paramiko.SFTPClient.from_transport(transport)
+    print("Connected to SFTP server")
+
+    sftp.put(encrypted_backup_file, os.path.basename(encrypted_backup_file))
+    sftp.put(encryption_key_file, os.path.basename(encryption_key_file))
+    print("Backup and encryption key uploaded successfully")
+
+    sftp.close()
+    transport.close()
+except paramiko.AuthenticationException:
+    print("Authentication failed. Please check your SFTP credentials.")
+except Exception as e:
+    print("Error occurred during SFTP transfer:", e)
+finally:
+    # Nettoyage : suppression des fichiers temporaires et des répertoires
+    os.remove(encryption_key_file)
+    os.remove(encrypted_backup_file)
+    os.remove(mysql_backup_file)
+    shutil.rmtree(os.path.join(backup_dir, 'www'))
+    print("Temporary files and directories deleted successfully")
+```
+
+
 
 
