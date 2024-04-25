@@ -255,6 +255,37 @@ finally:
     print("Temporary files and directories deleted successfully")
 ```
 
+### Spécifications du Programme de Sauvegarde :
+
+1. **Objectif :** Le programme effectue une sauvegarde complète d'une base de données MySQL et du contenu d'un répertoire FTP, chiffre les données sauvegardées, les transfère sur un serveur distant via SFTP, puis nettoie les fichiers temporaires locaux.
+
+2. **Fonctionnalités :**
+   - Sauvegarde de la base de données MySQL dans un fichier SQL.
+   - Copie du contenu du répertoire FTP dans un répertoire de sauvegarde local.
+   - Génération aléatoire d'une clé de chiffrement pour sécuriser les données.
+   - Création d'une archive contenant la sauvegarde MySQL et le contenu FTP.
+   - Chiffrement de l'archive avec OpenSSL en utilisant la clé de chiffrement.
+   - Transfert de l'archive chiffrée et de la clé de chiffrement sur un serveur distant via SFTP.
+   - Suppression des fichiers temporaires locaux après le transfert.
+
+3. **Technologies Utilisées :**
+   - Python pour l'automatisation des tâches.
+   - Shell pour l'exécution de commandes système.
+   - Paramiko pour la connexion et le transfert via SFTP.
+   - OpenSSL pour le chiffrement des données sensibles.
+   - Système de fichiers Linux pour la gestion des fichiers et répertoires.
+
+4. **Configuration Requise :**
+   - Accès à la base de données MySQL avec des privilèges de sauvegarde.
+   - Accès en écriture au répertoire FTP et aux fichiers de sauvegarde.
+   - Installation de Python et des modules Paramiko.
+   - Disponibilité de OpenSSL pour le chiffrement des données.
+
+5. **Utilisation :**
+   - Personnalisation des chemins des répertoires et des informations d'identification dans le code.
+   - Exécution du programme de sauvegarde sur le serveur où les données sont stockées.
+   - Automatisation possible via des tâches planifiées ou des scripts d'automatisation.
+
 
 
 
