@@ -39,7 +39,6 @@ python3 -m pip install paramiko
 ```python
 import shutil
 import subprocess
-import ftplib
 import os
 import datetime
 import paramiko
@@ -64,12 +63,35 @@ try:
 except Exception as e:
     print("Error occurred while backing up MySQL:", e)
 
-# Encrypt backup file with OpenSSL
+# Copy FTP content to backup directory
+try:
+    shutil.copytree(source_dir, os.path.join(backup_dir, 'www'))
+    print("Website directory copied successfully")
+except Exception as e:
+    print("Error occurred while copying website directory:", e)
+
+# Create archive including MySQL backup and website content
+try:
+    shutil.make_archive(backup_name.split('.')[0], 'gztar', backup_dir)
+    print("Archive created successfully")
+except Exception as e:
+    print("Error occurred while creating archive:", e)
+
+# Copy encryption key to backup directory
 encryption_key = 'aes_key.txt'
+encryption_key_backup = os.path.join(backup_dir, encryption_key)
+
+try:
+    shutil.copy(encryption_key, encryption_key_backup)
+    print("Encryption key copied successfully")
+except Exception as e:
+    print("Error occurred while copying encryption key:", e)
+
+# Encrypt backup file with OpenSSL
 encrypted_backup_file = os.path.join(backup_dir, 'encrypted_backup.tar.gz')
 
 try:
-    openssl_encrypt_command = f"openssl enc -aes-256-cbc -salt -in {mysql_backup_file} -out {encrypted_backup_file} -k {encryption_key}"
+    openssl_encrypt_command = f"openssl enc -aes-256-cbc -salt -in {backup_name} -out {encrypted_backup_file} -pass file:{encryption_key_backup}"
     subprocess.call(openssl_encrypt_command, shell=True)
     print("Encryption completed successfully")
 except Exception as e:
@@ -81,25 +103,23 @@ sftp_port = 22
 sftp_username = 'yug'
 sftp_password = 'doranco'
 
-# Connect to SFTP server
+# Connect to SFTP server and upload encrypted backup file and encryption key
 try:
     transport = paramiko.Transport((sftp_host, sftp_port))
     transport.connect(username=sftp_username, password=sftp_password)
     sftp = paramiko.SFTPClient.from_transport(transport)
     print("Connected to SFTP server")
-    
-    # Upload encrypted backup file
+
     sftp.put(encrypted_backup_file, os.path.basename(encrypted_backup_file))
-    print("Backup uploaded successfully")
-    
-    # Close connection
+    sftp.put(encryption_key_backup, os.path.basename(encryption_key_backup))
+    print("Backup and encryption key uploaded successfully")
+
     sftp.close()
     transport.close()
 except paramiko.AuthenticationException:
     print("Authentication failed. Please check your SFTP credentials.")
 except Exception as e:
     print("Error occurred during SFTP transfer:", e)
-
 
 
 ```
