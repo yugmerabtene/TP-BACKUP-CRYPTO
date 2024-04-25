@@ -138,3 +138,13 @@ crontab -e
 ```
 
 4. Enregistrez et fermez le fichier.
+
+
+5. decrypter sur le server de sauvgarde :  
+
+
+tar -xzf decrypted
+
+
+sudo openssl enc -d -aes-256-cbc -in encrypted_backup.tar.gz -out decrypted -pass file:aes_key.txt
+
